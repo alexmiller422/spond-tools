@@ -1,0 +1,8 @@
+/.idea/
+
+/node_modules/
+
+# Output files
+/sponds/
+trace.zip
+*.xlsx

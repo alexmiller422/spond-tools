@@ -1,0 +1,22 @@
+{
+  "name": "spond-tools",
+  "version": "1.0.0",
+  "scripts": {
+  },
+  "author": "Alex Miller <alexmiller422@github.com>",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@playwright/browser-chromium": "^1.56.0",
+    "@types/node": "^22.13.14",
+    "playwright": "^1.56.0",
+    "typescript": "^5.9.3",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "yargs": "^17.0.0"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "^22.0.2",
+    "@types/yargs": "^17.0.33",
+    "tsx": "^4.20.6"
+  }
+}
