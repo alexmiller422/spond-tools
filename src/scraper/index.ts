@@ -1,6 +1,6 @@
-import {Page} from "playwright";
+import {chromium, Page, Response} from "playwright";
 
-export interface Group {
+interface Group {
     scrollAllEvents(): Promise<this>;
 }
 
@@ -31,7 +31,7 @@ class GroupImpl implements Group {
     }
 }
 
-export interface Client {
+interface Client {
     navigateToGroup(group: string): Promise<Group>
 }
 
@@ -52,7 +52,7 @@ class ClientImpl implements Client{
 
 }
 
-export async function login(page: Page, emailOrPhoneNumber: string, password: string): Promise<Client> {
+async function login(page: Page, emailOrPhoneNumber: string, password: string): Promise<Client> {
     await page.goto("https://spond.com/client");
 
     await page.locator("//input[@name='emailOrPhoneNumber']")
@@ -67,4 +67,40 @@ export async function login(page: Page, emailOrPhoneNumber: string, password: st
     await page.waitForURL("https://spond.com/client");
 
     return new ClientImpl(page);
+}
+
+function responseHandler(spondHandler: (sponds: any) => Promise<void>) {
+    return (response: Response) => {
+        if (response.request().method() === "GET" && response.request().url().includes('/sponds') && response.status() == 200) {
+            response.json().then(async (sponds: any[]) => {
+                for (const spond of sponds) {
+                    await spondHandler(spond);
+                }
+            })
+        }
+    }
+}
+
+export async function scrape(
+    headless: boolean, trace: boolean, emailOrPhoneNumber: string, password: string, groupName: string, spondHandler: (spond: any[]) => Promise<void>
+) {
+    const browser = await chromium.launch({headless});
+    const context = await browser.newContext();
+    if (trace) {
+        await context.tracing.start({screenshots: true, snapshots: true});
+    }
+    const page = await context.newPage();
+    page.on('response', responseHandler(spondHandler));
+
+
+    const client = await login(page, emailOrPhoneNumber, password);
+
+    const group = await client.navigateToGroup(groupName);
+    await group.scrollAllEvents();
+
+    await page.close();
+    if (trace) {
+        await context.tracing.stop({path: "trace.zip"});
+    }
+    await browser.close();
 }

@@ -1,26 +1,7 @@
 import * as XLSX from "xlsx";
-import {getTeamAvailabilities, getTeamMembers, getTeams, MatchAvailabilities, Member} from "./db";
+import {getTeamAvailabilities, getTeamMembers, getTeams, MatchAvailabilities} from "./db";
+import {memberComparator} from "./comparators";
 
-const memberComparator = (member1: Member | string, member2: Member | string) => {
-    if (typeof member1 === "string" && typeof member2 === "string") {
-        return member1.localeCompare(member2);
-    }
-
-    if (typeof member1 === "string") {
-        return 1;
-    }
-
-    if (typeof member2 === "string") {
-        return -1;
-    }
-    const firstName = member1.firstName.localeCompare(member2.firstName)
-
-    if (firstName != 0) {
-        return firstName;
-    }
-
-    return member1.lastName.localeCompare(member2.lastName);
-};
 
 const availabilitiesComparator = (left: MatchAvailabilities) => {
     return left.date.localeCompare(left.date);
@@ -104,4 +85,9 @@ export function createWorkbook() {
     }
 
     return workbook;
+}
+
+export function saveWorkbook(filename: string) {
+    const workbook = createWorkbook();
+    XLSX.writeFile(workbook, filename, {type: "file", bookType: "xlsx"})
 }
