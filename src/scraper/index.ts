@@ -11,11 +11,18 @@ class GroupImpl implements Group {
     public async scrollAllEvents(): Promise<this> {
         let initialCount: number;
         let afterScrollCount: number;
-        do {
-            const locator = this.page.locator("#pageContentWrapper")
-                .filter({hasText: "Edit Events"})
-                .locator("> div > div:nth-child(2)")
 
+        const locator = this.page.locator("#pageContentWrapper")
+            .filter({hasText: "Edit Events"})
+            .locator("> div > div:nth-child(2)")
+
+        try {
+            await this.page.locator("#spinner").waitFor({state: "detached"});
+        }
+        catch(error) {
+            console.log(error);
+        }
+        do {
             initialCount = await locator.locator("> div").count();
 
             const spinnerPromise = this.page.locator("#spinner").waitFor();
