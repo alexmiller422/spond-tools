@@ -111,7 +111,7 @@ function availabilitiesComparator(left: MatchAvailabilities, right: MatchAvailab
 
 function counter(columnIndex: number, value: string): string {
     const column = columnIndexToLetter(columnIndex);
-    return `=CONCAT("${value}: ", COUNTIF(${column}${ROW_OFFSET}:${column}, "${value}"))`;
+    return `=CONCAT("${value}: ", COUNTIF(${column}${ROW_OFFSET+1}:${column}, "${value}"))`;
 }
 
 function googleSheetsDate(date: string): number {
@@ -123,13 +123,12 @@ async function addAvailabilities(client: sheets_v4.Sheets, spreadsheetId: string
 
     let columnIndex = COLUMN_OFFSET;
     for (const availability of availabilities) {
-        columnIndex ++;
         const column: any[] = new Array(rowsByMember.size + ROW_OFFSET);
 
         function addAvailability(memberIds: string[], status: string) {
             for (const memberId of memberIds) {
-                const columnIndex = rowsByMember.get(memberId)!;
-                column[columnIndex] = status;
+                const rowIndex = rowsByMember.get(memberId)!;
+                column[rowIndex] = status;
             }
         }
 
@@ -155,6 +154,8 @@ async function addAvailabilities(client: sheets_v4.Sheets, spreadsheetId: string
         addAvailability(availability.waitingListIds, "Wait list");
 
         values.push(column);
+
+        columnIndex ++;
     }
 
     await client.spreadsheets.values.append({
