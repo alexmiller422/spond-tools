@@ -170,6 +170,10 @@ async function addAvailabilities(client: sheets_v4.Sheets, spreadsheetId: string
 
 }
 
+const ACCEPTED = {red: 0.55, green: 0.75, blue: 0.5};
+const UNANSWERED = {red: 1.0, green: 0.85, blue: 0.4};
+const DECLINED = {red: 0.9, green: 0.6, blue: 0.6};
+
 async function formatSheet(client: Sheets, spreadsheetId: string, sheet: SheetProperties) {
     const requests: Request[] = [];
 
@@ -234,7 +238,7 @@ async function formatSheet(client: Sheets, spreadsheetId: string, sheet: SheetPr
             },
             fields: "userEnteredFormat.numberFormat.pattern,userEnteredFormat.numberFormat.type"
         }
-    })
+    });
 
     requests.push({
         autoResizeDimensions: {
@@ -244,7 +248,136 @@ async function formatSheet(client: Sheets, spreadsheetId: string, sheet: SheetPr
                 startIndex: 1,
             }
         }
-    })
+    });
+
+    const range = {
+        sheetId: sheet.sheetId,
+        startRowIndex: ROW_OFFSET,
+        startColumnIndex: COLUMN_OFFSET,
+    };
+
+    // Blank values should be grey
+    requests.push({
+        addConditionalFormatRule: {
+            rule: {
+                ranges: [range],
+                booleanRule: {
+                    condition: {
+                        type: "BLANK"
+                    },
+                    format: {
+                        backgroundColor: {red: 0.8, green: 0.8, blue: 0.8},
+                    }
+                },
+            }
+        }
+    });
+
+    // Unanswered values should be yellow
+    requests.push({
+        addConditionalFormatRule: {
+            rule: {
+                ranges: [range],
+                booleanRule: {
+                    condition: {
+                        type: "TEXT_EQ",
+                        values: [{userEnteredValue: "Unanswered"}]
+                    },
+                    format: {
+                        backgroundColor: UNANSWERED,
+                    }
+                },
+            }
+        }
+    });
+
+    requests.push({
+        repeatCell: {
+            range: {
+                sheetId: sheet.sheetId,
+                startColumnIndex: COLUMN_OFFSET,
+                startRowIndex: 5,
+                endRowIndex: 6
+            },
+            cell: {
+                userEnteredFormat: {
+                    backgroundColor: UNANSWERED
+                }
+            },
+            fields: "userEnteredFormat.backgroundColor"
+        }
+    });
+
+
+    // Accepted values should be green
+    requests.push({
+        addConditionalFormatRule: {
+            rule: {
+                ranges: [range],
+                booleanRule: {
+                    condition: {
+                        type: "TEXT_EQ",
+                        values: [{userEnteredValue: "Accepted"}]
+                    },
+                    format: {
+                        backgroundColor: ACCEPTED,
+                    }
+                },
+            }
+        }
+    });
+    requests.push({
+        repeatCell: {
+            range: {
+                sheetId: sheet.sheetId,
+                startColumnIndex: COLUMN_OFFSET,
+                startRowIndex: 4,
+                endRowIndex: 5
+            },
+            cell: {
+                userEnteredFormat: {
+                    backgroundColor: ACCEPTED
+                }
+            },
+            fields: "userEnteredFormat.backgroundColor"
+        }
+    });
+
+
+    // Declined values should be red
+    requests.push({
+        addConditionalFormatRule: {
+            rule: {
+                ranges: [range],
+                booleanRule: {
+                    condition: {
+                        type: "TEXT_EQ",
+                        values: [{userEnteredValue: "Declined"}]
+                    },
+                    format: {
+                        backgroundColor: DECLINED,
+                    }
+                },
+            }
+        }
+    });
+    requests.push({
+        repeatCell: {
+            range: {
+                sheetId: sheet.sheetId,
+                startColumnIndex: COLUMN_OFFSET,
+                startRowIndex: 6,
+                endRowIndex: 7
+            },
+            cell: {
+                userEnteredFormat: {
+                    backgroundColor: DECLINED
+                }
+            },
+            fields: "userEnteredFormat.backgroundColor"
+        }
+    });
+
 
     await client.spreadsheets.batchUpdate({
         spreadsheetId: spreadsheetId,
