@@ -1,4 +1,7 @@
 import {chromium, Page, Response} from "playwright";
+import {loggerFactory} from "../logging";
+
+const LOG = loggerFactory({filename: __filename});
 
 interface Group {
     scrollAllEvents(): Promise<this>;
@@ -24,6 +27,8 @@ class GroupImpl implements Group {
             console.log(error);
         }
         do {
+            LOG.info("Scrolling Sponds");
+
             initialCount = await locator.locator("> div").count();
 
             const spinnerPromise = this.page.locator("#spinner").waitFor()
@@ -35,6 +40,8 @@ class GroupImpl implements Group {
             await spinnerPromise
 
             afterScrollCount = await locator.locator("> div").count();
+
+            LOG.info("New Sponds = %d", afterScrollCount - initialCount);
         } while (afterScrollCount > initialCount);
 
         return this;
@@ -50,19 +57,25 @@ class ClientImpl implements Client{
     }
 
     public async navigateToGroup(group: string): Promise<Group> {
+        LOG.info("Navigating to group, %s", group);
+
         await this.page.getByRole("list")
             .filter({hasText: "Groups"})
             .getByRole("listitem")
             .filter({hasText: group})
             .click();
+
         await this.page.waitForURL("https://spond.com/client/groups/*");
 
+        LOG.info("Navigated to group, %s", group);
         return new GroupImpl(group, this.page);
     }
 
 }
 
 async function login(page: Page, emailOrPhoneNumber: string, password: string): Promise<Client> {
+    LOG.info("Logging into Spond");
+
     await page.goto("https://spond.com/client");
 
     await page.locator("//input[@name='emailOrPhoneNumber']")
@@ -76,6 +89,7 @@ async function login(page: Page, emailOrPhoneNumber: string, password: string): 
 
     await page.waitForURL("https://spond.com/client");
 
+    LOG.info("Logged into Spond");
     return new ClientImpl(page);
 }
 
@@ -83,8 +97,15 @@ function responseHandler(spondHandler: (sponds: any) => Promise<void>) {
     return (response: Response) => {
         if (response.request().method() === "GET" && response.request().url().includes('/sponds') && response.status() == 200) {
             response.json().then(async (sponds: any[]) => {
-                for (const spond of sponds) {
-                    await spondHandler(spond);
+                LOG.info("Processing Sponds");
+                try {
+                    for (const spond of sponds) {
+                        await spondHandler(spond);
+                    }
+                    LOG.info("Processed Sponds");
+                }
+                catch(error) {
+                    LOG.error(error,"Error processing Sponds");
                 }
             })
         }

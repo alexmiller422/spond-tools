@@ -2,7 +2,10 @@
 
 /node_modules/
 
+*.credentials.json
+
 # Output files
+/dist/
 /sponds/
 trace.zip
 *.xlsx
