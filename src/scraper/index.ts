@@ -17,6 +17,7 @@ class GroupImpl implements Group {
             .locator("> div > div:nth-child(2)")
 
         try {
+            await this.page.locator("#spinner").waitFor();
             await this.page.locator("#spinner").waitFor({state: "detached"});
         }
         catch(error) {
@@ -25,11 +26,13 @@ class GroupImpl implements Group {
         do {
             initialCount = await locator.locator("> div").count();
 
-            const spinnerPromise = this.page.locator("#spinner").waitFor();
-            await locator.locator("> div:last-child").scrollIntoViewIfNeeded();
-            await spinnerPromise.then(() => {
+            const spinnerPromise = this.page.locator("#spinner").waitFor()
+                .then(() => {
                     return this.page.locator("#spinner").waitFor({state: "detached"});
                 });
+
+            await locator.locator("> div:last-child").scrollIntoViewIfNeeded();
+            await spinnerPromise
 
             afterScrollCount = await locator.locator("> div").count();
         } while (afterScrollCount > initialCount);
