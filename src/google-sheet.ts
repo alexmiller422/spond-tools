@@ -387,6 +387,21 @@ async function formatSheet(client: Sheets, spreadsheetId: string, sheet: SheetPr
     })
 }
 
+async function setLastUpdated(client: Sheets, spreadsheetId: string, sheet: SheetProperties): Promise<void> {
+    const lastUpdated = new Date();
+
+    await client.spreadsheets.values.append({
+        spreadsheetId: spreadsheetId,
+        range: `'${sheet.title}'!B2`,
+        valueInputOption: "USER_ENTERED",
+        requestBody: {
+            majorDimension: "COLUMNS",
+            values: [["Last updated:", lastUpdated.toUTCString()]]
+        }
+    });
+
+}
+
 export async function updateGoogleSpreadSheet(spreadsheetId: string, teamFilter?: (value: Team) => boolean, matchFilter?: (value: MatchAvailabilities) => boolean ) {
     if (teamFilter === undefined){
         teamFilter = () => true;
@@ -442,6 +457,8 @@ export async function updateGoogleSpreadSheet(spreadsheetId: string, teamFilter?
             await addAvailabilities(client, spreadsheetId, sheet, team, rowsByMember, availabilities);
 
             await formatSheet(client, spreadsheetId, sheet);
+
+            await setLastUpdated(client, spreadsheetId, sheet);
         }
         catch (e) {
             // log.error(e, "Error creating sheet for team: %s", team.name);
