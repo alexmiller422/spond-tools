@@ -112,11 +112,14 @@ function responseHandler(spondHandler: (sponds: any) => Promise<void>) {
     }
 }
 
+const PLAYWRIGHT_DEFAULT_TIMEOUT = process.env.PLAYWRIGHT_DEFAULT_TIMEOUT ? parseInt(process.env.PLAYWRIGHT_DEFAULT_TIMEOUT) : 450000;
+
 export async function scrape(
     headless: boolean, trace: boolean, emailOrPhoneNumber: string, password: string, groupName: string, spondHandler: (spond: any[]) => Promise<void>
 ) {
     const browser = await chromium.launch({headless});
     const context = await browser.newContext();
+    context.setDefaultTimeout(PLAYWRIGHT_DEFAULT_TIMEOUT);
     if (trace) {
         await context.tracing.start({screenshots: true, snapshots: true});
     }
