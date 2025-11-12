@@ -1,7 +1,7 @@
 import {chromium, Page, Response} from "playwright";
 import {loggerFactory} from "../logging";
 
-const LOG = loggerFactory({filename: __filename});
+const LOG = loggerFactory({module: "scraper"});
 
 interface Group {
     scrollAllEvents(): Promise<this>;
@@ -41,7 +41,7 @@ class GroupImpl implements Group {
 
             afterScrollCount = await locator.locator("> div").count();
 
-            LOG.info("New Sponds = %d", afterScrollCount - initialCount);
+            LOG.info("New Sponds = %d - %d", initialCount, afterScrollCount);
         } while (afterScrollCount > initialCount);
 
         return this;
@@ -74,7 +74,7 @@ class ClientImpl implements Client{
 }
 
 async function login(page: Page, emailOrPhoneNumber: string, password: string): Promise<Client> {
-    LOG.info("Logging into Spond");
+    LOG.info("Logging in to Spond");
 
     await page.goto("https://spond.com/client");
 
@@ -89,7 +89,7 @@ async function login(page: Page, emailOrPhoneNumber: string, password: string): 
 
     await page.waitForURL("https://spond.com/client");
 
-    LOG.info("Logged into Spond");
+    LOG.info("Log in to Spond complete");
     return new ClientImpl(page);
 }
 

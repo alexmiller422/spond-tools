@@ -12,6 +12,9 @@ import Schema$Sheet = sheets_v4.Schema$Sheet;
 import Schema$Spreadsheet = sheets_v4.Schema$Spreadsheet;
 import Sheets = sheets_v4.Sheets;
 import SheetProperties = sheets_v4.Schema$SheetProperties;
+import {loggerFactory} from "./logging";
+
+const LOG = loggerFactory({module: "google-sheet"});
 
 const COLUMN_OFFSET = 2;
 const ROW_OFFSET = 7;
@@ -31,11 +34,13 @@ async function createOrReplaceSheet(client: Sheets, spreadsheet: Schema$Spreadsh
 
     const sheet = spreadsheet.sheets?.find(matchTeam(team))
     if (sheet !== undefined) {
+        LOG.info("Deleting exiting sheet for team, %s", team.name);
         requests.push({deleteSheet: {
                 sheetId: sheet.properties!.sheetId,
             }})
     }
 
+    LOG.info("Creating new sheet for team, %s", team.name);
     requests.push({
         addSheet: {
             properties: {
@@ -59,6 +64,8 @@ async function createOrReplaceSheet(client: Sheets, spreadsheet: Schema$Spreadsh
 }
 
 async function addMemberColumn(client: Sheets, spreadsheetId: string, sheet: SheetProperties, team: Team): Promise<Map<string, number>> {
+    LOG.info("Adding members column for team, %s", team.name);
+
     const teamMembers = getTeamMembers(team.id)
         .sort(memberComparator);
 
@@ -123,6 +130,8 @@ async function addAvailabilities(client: sheets_v4.Sheets, spreadsheetId: string
 
     let columnIndex = COLUMN_OFFSET;
     for (const availability of availabilities) {
+        LOG.info("Adding availabilities for team, %s, and match, %s", team.name, availability.heading);
+
         const column: any[] = new Array(rowsByMember.size + ROW_OFFSET);
 
         function addAvailability(memberIds: string[], status: string) {
@@ -175,6 +184,8 @@ const UNANSWERED = {red: 1.0, green: 0.85, blue: 0.4};
 const DECLINED = {red: 0.9, green: 0.6, blue: 0.6};
 
 async function formatSheet(client: Sheets, spreadsheetId: string, sheet: SheetProperties) {
+    LOG.info("Formatting sheet");
+
     const requests: Request[] = [];
 
     requests.push({
@@ -388,6 +399,8 @@ async function formatSheet(client: Sheets, spreadsheetId: string, sheet: SheetPr
 }
 
 async function setLastUpdated(client: Sheets, spreadsheetId: string, sheet: SheetProperties): Promise<void> {
+    LOG.info("Setting last updated timestamp");
+
     const lastUpdated = new Date();
 
     await client.spreadsheets.values.append({
@@ -441,6 +454,7 @@ export async function updateGoogleSpreadSheet(spreadsheetId: string, teamFilter?
 
     for(let i = 0; i < teams.length; i++) {
         const team = teams[i];
+        LOG.info("Processing availabilities for team, %s", team.name);
         try {
             const availabilities = getTeamAvailabilities(team.id)
                 .filter(matchFilter)
@@ -459,10 +473,11 @@ export async function updateGoogleSpreadSheet(spreadsheetId: string, teamFilter?
             await formatSheet(client, spreadsheetId, sheet);
 
             await setLastUpdated(client, spreadsheetId, sheet);
+            LOG.info("Completed processing availabilities for team, %s", team.name);
         }
         catch (e) {
             // log.error(e, "Error creating sheet for team: %s", team.name);
-            console.error(`Error creating sheet for team: ${team.name}`, e);
+            LOG.error(e, "Error processing availabilities for team, %s", team.name);
         }
     }
 }
